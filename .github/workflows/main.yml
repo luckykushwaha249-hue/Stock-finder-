@@ -1,0 +1,43 @@
+name: Daily Stock Scan
+
+on:
+  schedule:
+    # Roz 9:30 AM IST (= 4:00 AM UTC) - NSE market open ke thoda baad
+    - cron: '0 4 * * 1-5'   # Mon-Fri only
+  workflow_dispatch:        # "Run workflow" button se manually bhi chala sakte ho
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run stock scan
+        env:
+          DHAN_CLIENT_ID: ${{ secrets.DHAN_CLIENT_ID }}
+          DHAN_ACCESS_TOKEN: ${{ secrets.DHAN_ACCESS_TOKEN }}
+          ANGEL_API_KEY: ${{ secrets.ANGEL_API_KEY }}
+          ANGEL_CLIENT_CODE: ${{ secrets.ANGEL_CLIENT_CODE }}
+          ANGEL_PASSWORD: ${{ secrets.ANGEL_PASSWORD }}
+          ANGEL_TOTP_SECRET: ${{ secrets.ANGEL_TOTP_SECRET }}
+        run: python scan.py --max-stocks 500 --sleep 0.1
+
+      - name: Commit results back to repo
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action - Stock Scanner"
+          git add results.json results.csv
+          git diff --quiet --cached || git commit -m "Auto scan results - $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
