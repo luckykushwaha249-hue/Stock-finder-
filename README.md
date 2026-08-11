@@ -66,14 +66,37 @@ Har stock ke liye pehla source try hota hai; fail ho to agla try hota hai
 
 ```
 stock_ai_pro/
-├── app.py                # Streamlit UI (main entry point)
-├── config.py              # API keys & strategy tolerances
-├── data_sources.py        # Dhan/NSE/BSE/Yahoo/AngelOne fallback chain
-├── nifty500_list.py       # Nifty 500 symbol list loader
-├── results_calendar.py    # Quarterly result date fetcher
-├── strategy.py             # Core screening logic
-└── requirements.txt
+├── app.py                        # Streamlit UI (main entry point)
+├── scan.py                       # Headless scan (for automation/cron)
+├── config.py                     # API keys & strategy tolerances
+├── data_sources.py               # Dhan/NSE/BSE/Yahoo/AngelOne fallback chain
+├── nifty500_list.py              # Nifty 500 symbol list loader
+├── results_calendar.py           # Quarterly result date fetcher
+├── strategy.py                   # Core screening logic
+├── requirements.txt
+└── .github/workflows/main.yml    # Daily scheduled scan (GitHub Actions)
 ```
+
+## Scheduled Auto-Scan (GitHub Actions)
+
+`scan.py` — Streamlit UI ke bina, same strategy headless run karta hai, results
+`results.json` aur `results.csv` mein save karta hai.
+
+`.github/workflows/main.yml` — roz **Mon-Fri 9:30 AM IST** pe automatically
+`scan.py` chalata hai aur results repo mein commit kar deta hai. Isse tum
+GitHub pe kabhi bhi `results.csv` khol ke latest matched stocks dekh sakte ho,
+bina app open kiye.
+
+**Setup (GitHub Actions):**
+1. Repo → Settings → Secrets and variables → Actions → "New repository secret"
+2. Yahan apni API keys daalo (`DHAN_CLIENT_ID`, `DHAN_ACCESS_TOKEN`, etc.) — agar
+   nahi doge, workflow Yahoo Finance se hi chal jayega.
+3. Repo → Settings → Actions → General → "Workflow permissions" → **"Read and write permissions"**
+   select karo (warna workflow results commit nahi kar payega).
+4. Manual test: repo → Actions tab → "Daily Stock Scan" → "Run workflow" button.
+
+Cron time badalna ho to `main.yml` mein `cron: '0 4 * * 1-5'` line edit karo
+(time UTC mein hai, IST = UTC + 5:30).
 
 ## Known Limitations (important — sach-sach bata raha hoon)
 
